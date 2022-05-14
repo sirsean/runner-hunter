@@ -1,3 +1,23 @@
+import { ethers } from 'ethers';
+import gameABI from './game_abi.js';
+
+const POLYGON_MAINNET = 'https://speedy-nodes-nyc.moralis.io/3179d0a0ca298369a8ce67dd/polygon/mainnet';
+let _provider;
+function provider() {
+    _provider ||= new ethers.providers.StaticJsonRpcProvider({
+        url: POLYGON_MAINNET,
+        skipFetchSetup: true,
+    });
+    return _provider;
+}
+
+const GAME_ADDR = '0x9d0c114Ac1C3cD1276B0366160B3354ca0f9377E';
+let _gameContract;
+function gameContract() {
+    _gameContract ||= new ethers.Contract(GAME_ADDR, gameABI, provider());
+    return _gameContract;
+}
+
 function runnerTitle(id, runner) {
     const talent = runner.attributes.Talent;
     const faction = runner.attributes.Faction.replace(/The /, '').replace(/s$/, '');
@@ -12,7 +32,7 @@ function htmlHead(title, runner) {
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://runner-hunter.sirsean.workers.dev" />
         <meta property="og:image" content="${runner.image}" />
-        <meta property="og:description" content="${title}" />
+        <meta property="og:description" content="NP: ${runner.attributes['Notoriety Points']}" />
         <meta name="twitter:card" content="summary_large_image">
         `;
     }
@@ -129,7 +149,13 @@ async function home(request) {
 }
 
 async function fetchRunner(id) {
-    return fetch(`https://mint.2112.run/tokens721/${id}.json`).then(r => r.json());
+    return Promise.all([
+        fetch(`https://mint.2112.run/tokens721/${id}.json`).then(r => r.json()),
+        gameContract().cryptoRunners(id),
+    ]).then(([runner, chain]) => {
+        runner.attributes['Notoriety Points'] = chain.notorietyPoints.toNumber();
+        return runner;
+    });
 }
 
 function attrRow(name, value) {
@@ -149,7 +175,8 @@ async function runner(request) {
         const title = runnerTitle(id, r);
         const image = r.image;
         const attrs = Object.assign({}, r.attributes);
-        ['Faction', 'Talent'].forEach(k => delete attrs[k]);
+        const notoriety = attrs['Notoriety Points'];
+        ['Faction', 'Talent', 'Notoriety Points'].forEach(k => delete attrs[k]);
         return new Response(`
         <!html>
         ${htmlHead(title, r)}
@@ -158,6 +185,7 @@ async function runner(request) {
             <img class="runner" src="${image}" />
             <table>
                 <tbody>
+                ${attrRow('Notoriety Points', notoriety)}
                 ${Object.keys(attrs).map(k => attrRow(k, attrs[k])).join('')}
                 </tbody>
             </table>
