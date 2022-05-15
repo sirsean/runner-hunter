@@ -1,21 +1,37 @@
 import { ethers } from 'ethers';
 import gameABI from './game_abi.js';
+import cryptorunnerNFTABI from './cryptorunner_nft_abi.js';
 
-const POLYGON_MAINNET = 'https://speedy-nodes-nyc.moralis.io/3179d0a0ca298369a8ce67dd/polygon/mainnet';
-let _provider;
-function provider() {
-    _provider ||= new ethers.providers.StaticJsonRpcProvider({
-        url: POLYGON_MAINNET,
+let _polygon;
+function polygon() {
+    _polygon ||= new ethers.providers.StaticJsonRpcProvider({
+        url: 'https://speedy-nodes-nyc.moralis.io/3179d0a0ca298369a8ce67dd/polygon/mainnet',
         skipFetchSetup: true,
     });
-    return _provider;
+    return _polygon;
+}
+
+let _mainnet;
+function mainnet() {
+    _mainnet ||= new ethers.providers.StaticJsonRpcProvider({
+        url: 'https://speedy-nodes-nyc.moralis.io/3179d0a0ca298369a8ce67dd/eth/mainnet',
+        skipFetchSetup: true,
+    });
+    return _mainnet;
 }
 
 const GAME_ADDR = '0x9d0c114Ac1C3cD1276B0366160B3354ca0f9377E';
 let _gameContract;
 function gameContract() {
-    _gameContract ||= new ethers.Contract(GAME_ADDR, gameABI, provider());
+    _gameContract ||= new ethers.Contract(GAME_ADDR, gameABI, polygon());
     return _gameContract;
+}
+
+const RUNNER_ADDR = '0xD05f71067876A68336c836aE602981728034a84c';
+let _runnerContract;
+function runnerContract() {
+    _runnerContract ||= new ethers.Contract(RUNNER_ADDR, cryptorunnerNFTABI, mainnet());
+    return _runnerContract;
 }
 
 function runnerTitle(id, runner) {
@@ -103,6 +119,13 @@ async function stylesheet(request) {
     table td {
         color: #FBF665;
     }
+    table td.opensea {
+        text-align: center;
+    }
+    table td.opensea a {
+        color: #FF6700;
+        font-size: 1.6em;
+    }
     form {
         margin: 2em;
         text-align: center;
@@ -152,8 +175,10 @@ async function fetchRunner(id) {
     return Promise.all([
         fetch(`https://mint.2112.run/tokens721/${id}.json`).then(r => r.json()),
         gameContract().cryptoRunners(id),
-    ]).then(([runner, chain]) => {
+        runnerContract().ownerOf(id),
+    ]).then(([runner, chain, owner]) => {
         runner.attributes['Notoriety Points'] = chain.notorietyPoints.toNumber();
+        runner.owner = owner;
         return runner;
     });
 }
@@ -185,8 +210,18 @@ async function runner(request) {
             <img class="runner" src="${image}" />
             <table>
                 <tbody>
-                ${attrRow('Notoriety Points', notoriety)}
-                ${Object.keys(attrs).map(k => attrRow(k, attrs[k])).join('')}
+                    ${attrRow('Notoriety Points', notoriety)}
+                    ${Object.keys(attrs).map(k => attrRow(k, attrs[k])).join('')}
+                </tbody>
+            </table>
+            <table>
+                <tbody>
+                    ${attrRow('Owner', r.owner)}
+                    <tr>
+                        <td class="opensea" colspan="2">
+                            <a target="_blank" href="https://opensea.io/assets/0xd05f71067876a68336c836ae602981728034a84c/${id}">Opensea</a>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </body>
@@ -232,9 +267,5 @@ export default {
   async fetch(request) {
       const url = new URL(request.url);
       return handler(url.pathname)(request);
-      //return fetch('https://mint.2112.run/tokens721/1990.json').then(r => r.json())
-      //  .then(x => {
-      //      return new Response(x.name);
-      //  });
   },
 };
