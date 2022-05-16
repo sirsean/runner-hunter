@@ -40,9 +40,16 @@ function runnerTitle(id, runner) {
     return `${id} &gt;&gt; T${talent} ${faction}`;
 }
 
-function htmlHead(title, runner) {
+function htmlHead(title, runner, run) {
     let metadata = '';
-    if (runner) {
+    if (run) {
+        metadata = `
+        <meta property="og:title" content="${title}" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://runner-hunter.sirsean.workers.dev" />
+        <meta property="og:description" content="NP: ${run.notorietyPoints}\nDATA: ${parseInt(ethers.utils.formatUnits(run.data, 18))}" />
+        `;
+    } else if (runner) {
         metadata = `
         <meta property="og:title" content="${title}" />
         <meta property="og:type" content="website" />
@@ -103,6 +110,13 @@ async function stylesheet(request) {
         font-size: 3.5em;
         color: #FF6700;
     }
+    h2 {
+        text-align: center;
+        padding: 0;
+        margin: 0.2em;
+        font-size: 2.5em;
+        color: #FF6700;
+    }
     img.runner {
         width: 100%;
         border-radius: 10px;
@@ -150,6 +164,13 @@ async function stylesheet(request) {
         font-size: 1.8em;
         padding: 0.15em 0.3em;
     }
+    ol.run-list {
+        margin-left: 4em;
+        font-size: 1.5em;
+    }
+    ol.run-list a {
+        color: #FBF665;
+    }
     `);
 }
 
@@ -181,6 +202,16 @@ async function fetchRunner(id) {
         runner.owner = owner;
         return runner;
     });
+}
+
+async function fetchRunnerRuns(id) {
+    return gameContract().getRunsByRunner(id).then(runIds => {
+        return runIds.slice().reverse();
+    });
+}
+
+async function fetchRun(id) {
+    return gameContract().runsById(id);
 }
 
 function attrRow(name, value) {
@@ -219,6 +250,11 @@ async function runner(request) {
                     ${attrRow('Owner', r.owner)}
                     <tr>
                         <td class="opensea" colspan="2">
+                            <a href="/${id}/runs">Runs</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="opensea" colspan="2">
                             <a target="_blank" href="https://opensea.io/assets/0xd05f71067876a68336c836ae602981728034a84c/${id}">Opensea</a>
                         </td>
                     </tr>
@@ -244,12 +280,94 @@ async function search(request) {
     return Response.redirect(url.href, 301);
 }
 
+function linkToRun(runId) {
+    return `
+    <li><a href="/run/${runId}">${runId}</a></li>
+    `;
+}
+
+async function runs(request) {
+    const url = new URL(request.url);
+    const re = /^\/(\d+)\/runs$/;
+    const [_, id] = re.exec(url.pathname);
+    return Promise.all([
+        fetchRunner(id),
+        fetchRunnerRuns(id),
+    ]).then(([runner, runIds]) => {
+        const title = runnerTitle(id, runner);
+        return new Response(`
+        <!html>
+        ${htmlHead(title, runner)}
+        <body>
+            <h1>${title}</h1>
+            <ol class="run-list">
+                ${runIds.map(runId => linkToRun(runId)).join('')}
+            </ol>
+        </body>
+        `, {
+            headers: {
+                'Content-Type': 'text/html;charset=UTF-8',
+            },
+        });
+    }).catch(e => {
+        console.error(e);
+        return notFound(request);
+    });
+}
+
+async function viewRun(request) {
+    const url = new URL(request.url);
+    const re = /^\/run\/(.+)$/;
+    const [_, runId] = re.exec(url.pathname);
+    return fetchRun(runId).then(run => {
+        return Promise.all([
+            run,
+            fetchRunner(run.tokenId),
+        ]);
+    }).then(([run, runner]) => {
+        const title = runnerTitle(run.tokenId, runner);
+        return new Response(`
+        <!html>
+        ${htmlHead(title, runner, run)}
+        <body>
+            <h1>${title}</h1>
+            <h2>${runId}</h1>
+            <table>
+                <tbody>
+                    <tr>
+                        <th>NP</th>
+                        <td>${run.notorietyPoints}</td>
+                    </tr>
+                    <tr>
+                        <th>$DATA</th>
+                        <td>${parseInt(ethers.utils.formatUnits(run.data, 18))}</td>
+                    </tr>
+                    <tr>
+                        <th>runtime</th>
+                        <td>${parseInt((run.endTime - run.startTime)/60)}m</td>
+                    </tr>
+                </tbody>
+            </table>
+        </body>
+        `, {
+            headers: {
+                'Content-Type': 'text/html;charset=UTF-8',
+            },
+        });
+    }).catch(e => {
+        console.error(e);
+        return notFound(request);
+    });
+}
+
 function handler(pathname) {
     const routes = [
         [/^\/$/, home],
         [/^\/favicon.ico$/, favicon],
         [/^\/style.css$/, stylesheet],
         [/^\/search$/, search],
+        [/^\/run\/.+$/, viewRun],
+        [/^\/\d+\/runs$/, runs],
         [/^\/\d+/, runner],
     ];
 
@@ -259,6 +377,7 @@ function handler(pathname) {
             return handler;
         }
     }
+    console.log(pathname, 'not found');
 
     return notFound;
 }
