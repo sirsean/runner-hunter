@@ -300,7 +300,7 @@ async function runs(request) {
         ${htmlHead(title, runner)}
         <body>
             <h1>${title}</h1>
-            <ol class="run-list">
+            <ol class="run-list" reversed>
                 ${runIds.map(runId => linkToRun(runId)).join('')}
             </ol>
         </body>
