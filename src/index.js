@@ -3,18 +3,18 @@ import gameABI from './game_abi.js';
 import cryptorunnerNFTABI from './cryptorunner_nft_abi.js';
 
 let _polygon;
-function polygon() {
+function polygon(env) {
     _polygon ||= new ethers.providers.StaticJsonRpcProvider({
-        url: 'https://speedy-nodes-nyc.moralis.io/3179d0a0ca298369a8ce67dd/polygon/mainnet',
+        url: env.POLYGON_ENDPOINT,
         skipFetchSetup: true,
     });
     return _polygon;
 }
 
 let _mainnet;
-function mainnet() {
+function mainnet(env) {
     _mainnet ||= new ethers.providers.StaticJsonRpcProvider({
-        url: 'https://speedy-nodes-nyc.moralis.io/3179d0a0ca298369a8ce67dd/eth/mainnet',
+        url: env.MAINNET_ENDPOINT,
         skipFetchSetup: true,
     });
     return _mainnet;
@@ -22,15 +22,15 @@ function mainnet() {
 
 const GAME_ADDR = '0x9d0c114Ac1C3cD1276B0366160B3354ca0f9377E';
 let _gameContract;
-function gameContract() {
-    _gameContract ||= new ethers.Contract(GAME_ADDR, gameABI, polygon());
+function gameContract(env) {
+    _gameContract ||= new ethers.Contract(GAME_ADDR, gameABI, polygon(env));
     return _gameContract;
 }
 
 const RUNNER_ADDR = '0xD05f71067876A68336c836aE602981728034a84c';
 let _runnerContract;
-function runnerContract() {
-    _runnerContract ||= new ethers.Contract(RUNNER_ADDR, cryptorunnerNFTABI, mainnet());
+function runnerContract(env) {
+    _runnerContract ||= new ethers.Contract(RUNNER_ADDR, cryptorunnerNFTABI, mainnet(env));
     return _runnerContract;
 }
 
@@ -192,11 +192,11 @@ async function home(request) {
     });
 }
 
-async function fetchRunner(id) {
+async function fetchRunner(env, id) {
     return Promise.all([
         fetch(`https://mint.2112.run/tokens721/${id}.json`).then(r => r.json()),
-        gameContract().cryptoRunners(id),
-        runnerContract().ownerOf(id),
+        gameContract(env).cryptoRunners(id),
+        runnerContract(env).ownerOf(id),
     ]).then(([runner, chain, owner]) => {
         runner.attributes['Notoriety Points'] = chain.notorietyPoints.toNumber();
         runner.owner = owner;
@@ -204,14 +204,14 @@ async function fetchRunner(id) {
     });
 }
 
-async function fetchRunnerRuns(id) {
-    return gameContract().getRunsByRunner(id).then(runIds => {
+async function fetchRunnerRuns(env, id) {
+    return gameContract(env).getRunsByRunner(id).then(runIds => {
         return runIds.slice().reverse();
     });
 }
 
-async function fetchRun(id) {
-    return gameContract().runsById(id);
+async function fetchRun(env, id) {
+    return gameContract(env).runsById(id);
 }
 
 function attrRow(name, value) {
@@ -223,11 +223,11 @@ function attrRow(name, value) {
     `;
 }
 
-async function runner(request) {
+async function runner(request, env) {
     const url = new URL(request.url);
     const re = /^\/(\d+)$/;
     const [_, id] = re.exec(url.pathname);
-    return fetchRunner(id).then(r => {
+    return fetchRunner(env, id).then(r => {
         const title = runnerTitle(id, r);
         const image = r.image;
         const attrs = Object.assign({}, r.attributes);
@@ -272,7 +272,7 @@ async function runner(request) {
     });
 }
 
-async function search(request) {
+async function search(request, env) {
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
     url.pathname = id;
@@ -286,13 +286,13 @@ function linkToRun(runId) {
     `;
 }
 
-async function runs(request) {
+async function runs(request, env) {
     const url = new URL(request.url);
     const re = /^\/(\d+)\/runs$/;
     const [_, id] = re.exec(url.pathname);
     return Promise.all([
-        fetchRunner(id),
-        fetchRunnerRuns(id),
+        fetchRunner(env, id),
+        fetchRunnerRuns(env, id),
     ]).then(([runner, runIds]) => {
         const title = runnerTitle(id, runner);
         return new Response(`
@@ -315,14 +315,14 @@ async function runs(request) {
     });
 }
 
-async function viewRun(request) {
+async function viewRun(request, env) {
     const url = new URL(request.url);
     const re = /^\/run\/(.+)$/;
     const [_, runId] = re.exec(url.pathname);
-    return fetchRun(runId).then(run => {
+    return fetchRun(env, runId).then(run => {
         return Promise.all([
             run,
-            fetchRunner(run.tokenId),
+            fetchRunner(env, run.tokenId),
         ]);
     }).then(([run, runner]) => {
         const title = runnerTitle(run.tokenId, runner);
@@ -383,8 +383,8 @@ function handler(pathname) {
 }
 
 export default {
-  async fetch(request) {
+  async fetch(request, env, context) {
       const url = new URL(request.url);
-      return handler(url.pathname)(request);
+      return handler(url.pathname)(request, env);
   },
 };
