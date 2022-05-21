@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 import gameABI from './game_abi.js';
 import cryptorunnerNFTABI from './cryptorunner_nft_abi.js';
+import RunnerNarrativeABI from './RunnerNarrative.js';
 
 let _polygon;
 function polygon(env) {
@@ -27,6 +28,13 @@ function gameContract(env) {
     return _gameContract;
 }
 
+const NARRATIVE_ADDR = '0x40632f44E5CF7F7A229F4b0c018282fad8534ede';
+let _narrativeContract;
+function narrativeContract(env) {
+    _narrativeContract ||= new ethers.Contract(NARRATIVE_ADDR, RunnerNarrativeABI, polygon(env));
+    return _narrativeContract;
+}
+
 const RUNNER_ADDR = '0xD05f71067876A68336c836aE602981728034a84c';
 let _runnerContract;
 function runnerContract(env) {
@@ -50,12 +58,16 @@ function htmlHead(title, runner, run) {
         <meta property="og:description" content="NP: ${run.notorietyPoints}\nDATA: ${parseInt(ethers.utils.formatUnits(run.data, 18))}" />
         `;
     } else if (runner) {
+        let description = `NP: ${runner.attributes['Notoriety Points']}`;
+        if (runner.narrative) {
+            description += `\n\n${runner.narrative}`;
+        }
         metadata = `
         <meta property="og:title" content="${title}" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://runner-hunter.sirsean.workers.dev" />
         <meta property="og:image" content="${runner.image}" />
-        <meta property="og:description" content="NP: ${runner.attributes['Notoriety Points']}" />
+        <meta property="og:description" content="${description}" />
         <meta name="twitter:card" content="summary_large_image">
         `;
     }
@@ -120,6 +132,14 @@ async function stylesheet(request) {
     img.runner {
         width: 100%;
         border-radius: 10px;
+    }
+    div.narrative {
+        display: block;
+        padding: 0.3em;
+        margin: 0.2em;
+        font-size: 1.5em;
+        background-color: #2C2E3B;
+        border-radius: 5px;
     }
     table {
         margin: 0 auto;
@@ -197,9 +217,11 @@ async function fetchRunner(env, id) {
         fetch(`https://mint.2112.run/tokens721/${id}.json`).then(r => r.json()),
         gameContract(env).cryptoRunners(id),
         runnerContract(env).ownerOf(id),
-    ]).then(([runner, chain, owner]) => {
+        narrativeContract(env).narrative(id),
+    ]).then(([runner, chain, owner, narrative]) => {
         runner.attributes['Notoriety Points'] = chain.notorietyPoints.toNumber();
         runner.owner = owner;
+        runner.narrative = narrative;
         return runner;
     });
 }
@@ -233,12 +255,14 @@ async function runner(request, env) {
         const attrs = Object.assign({}, r.attributes);
         const notoriety = attrs['Notoriety Points'];
         ['Faction', 'Talent', 'Notoriety Points'].forEach(k => delete attrs[k]);
+        const narrativeElement = (r.narrative) ? `<div class="narrative">${r.narrative}</div>` : '';
         return new Response(`
         <!html>
         ${htmlHead(title, r)}
         <body>
             <h1>${title}</h1>
             <img class="runner" src="${image}" />
+            ${narrativeElement}
             <table>
                 <tbody>
                     ${attrRow('Notoriety Points', notoriety)}
