@@ -104,34 +104,84 @@ async function favicon(request) {
 }
 
 async function stylesheet(request) {
+    const black = '#000019';
+    const blue = '#525DDD';
+    const yellow = '#F2CB04';
     return new Response(`
     @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
     body {
-        width: 600px;
         margin: 0 auto;
         font-family: 'VT323', monospace;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-        background-color: black;
+        background-color: ${black};
         color: white;
     }
     h1 {
-        text-align: center;
         padding: 0;
         margin: 0.2em;
         font-size: 3.5em;
-        color: #FF6700;
+        color: ${blue};
     }
     h2 {
         text-align: center;
         padding: 0;
         margin: 0.2em;
         font-size: 2.5em;
-        color: #FF6700;
+        color: ${blue};
+    }
+    .runner {
+        display: flex;
+        flex-direction: column;
+    }
+    .runner .row {
+        margin: 8px 0;
+        display: flex;
+        flex-direction: row;
+    }
+    .runner .left {
+        width: 400px;
+    }
+    .runner .right {
+        display: flex;
+        flex-direction: column;
+        margin: 0 8px;
+    }
+    .runner .attr {
+        font-size: 1.8em;
+    }
+    .runner .attr .name {
+        color: ${blue};
+    }
+    .runner .attr .value {
+        color: ${yellow};
+    }
+    .runner .links {
+        display: flex;
+        flex-direction: row;
+    }
+    .runner .links a {
+        background-color: ${blue};
+        color: white;
+        font-size: 1.6em;
+        padding: 4px;
+        margin: 6px;
+        text-decoration: none;
+    }
+    .imgWrapper {
+        border: 4px solid ${yellow};
+        padding: 14px;
     }
     img.runner {
         width: 100%;
-        border-radius: 10px;
+        border-radius: 1px;
+    }
+    .owner {
+        padding: 5px;
+        color: ${black};
+        background-color: ${yellow};
+        font-size: 1.2em;
+        width: 100%;
     }
     div.narrative {
         display: block;
@@ -149,26 +199,19 @@ async function stylesheet(request) {
         text-align: right;
         padding-right: 0.4em;
         font-weight: normal;
+        color: ${blue};
     }
     table td {
-        color: #FBF665;
-    }
-    table td.opensea {
-        text-align: center;
-    }
-    table td.opensea a {
-        color: #FF6700;
-        font-size: 1.6em;
+        color: ${yellow};
     }
     form {
         margin: 2em;
-        text-align: center;
     }
     input {
         border: none;
-        border-bottom: 1px solid #FF6700;
-        background-color: black;
-        color: #FBF665;
+        border-bottom: 1px solid ${blue};
+        background-color: ${black};
+        color: ${yellow};
         outline: none;
         font-family: 'VT323', monospace;
         font-size: 2.4em;
@@ -176,11 +219,11 @@ async function stylesheet(request) {
         text-align: center;
     }
     button {
-        background-color: black;
-        border: 1px solid #FF6700;
+        background-color: ${black};
+        border: 1px solid ${blue};
         border-radius: 3px;
         font-family: 'VT323', monospace;
-        color: #FBF665;
+        color: ${yellow};
         font-size: 1.8em;
         padding: 0.15em 0.3em;
     }
@@ -189,7 +232,7 @@ async function stylesheet(request) {
         font-size: 1.5em;
     }
     ol.run-list a {
-        color: #FBF665;
+        color: ${yellow};
     }
     `);
 }
@@ -238,10 +281,10 @@ async function fetchRun(env, id) {
 
 function attrRow(name, value) {
     return `
-    <tr>
-        <th>${name}</th>
-        <td>${value}</td>
-    </tr>
+    <div class="attr">
+        <span class="name">${name}::</span>
+        <span class="value">${value}</span>
+    </div>
     `;
 }
 
@@ -260,30 +303,30 @@ async function runner(request, env) {
         <!html>
         ${htmlHead(title, r)}
         <body>
-            <h1>${title}</h1>
-            <img class="runner" src="${image}" />
-            ${narrativeElement}
-            <table>
-                <tbody>
-                    ${attrRow('Notoriety Points', notoriety)}
-                    ${Object.keys(attrs).map(k => attrRow(k, attrs[k])).join('')}
-                </tbody>
-            </table>
-            <table>
-                <tbody>
-                    ${attrRow('Owner', r.owner)}
-                    <tr>
-                        <td class="opensea" colspan="2">
+            <div class="runner">
+                <h1>${title}</h1>
+                <div class="row">
+                    <div class="owner">
+                        OWNER:: ${r.owner}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="left">
+                        <div class="imgWrapper">
+                            <img class="runner" src="${image}" />
+                        </div>
+                        ${narrativeElement}
+                    </div>
+                    <div class="right">
+                        ${attrRow('Notoriety Points', notoriety)}
+                        ${Object.keys(attrs).map(k => attrRow(k, attrs[k])).join('')}
+                        <div class="links">
                             <a href="/${id}/runs">Runs</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="opensea" colspan="2">
                             <a target="_blank" href="https://opensea.io/assets/0xd05f71067876a68336c836ae602981728034a84c/${id}">Opensea</a>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </body>
         `, {
             headers: {
