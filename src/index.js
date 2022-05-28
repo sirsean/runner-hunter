@@ -47,7 +47,7 @@ function runnerContract(env) {
 function runnerTitle(id, runner) {
     const talent = runner.attributes.Talent;
     const faction = runner.attributes.Faction.replace(/The /, '').replace(/s$/, '');
-    return `${id} &gt;&gt; T${talent} ${faction}`;
+    return `${id} :: T${talent} ${faction}`;
 }
 
 function htmlHead(title, runner, run) {
@@ -110,23 +110,41 @@ async function stylesheet(request) {
     const blue = '#525DDD';
     const yellow = '#F2CB04';
     return new Response(`
-    @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+    @font-face {
+        font-family: EvangelionRegular;
+        src: url('https://files-cors.sirsean.workers.dev/fonts/EVANGELION-k227rn.ttf');
+    }
+    @font-face {
+        font-family: EvangelionItalic;
+        src: url('https://files-cors.sirsean.workers.dev/fonts/EVANGELION-ITALIC-xohlcz.ttf');
+    }
+    @font-face {
+        font-family: SupplyMono;
+        src: url('https://files-cors.sirsean.workers.dev/fonts/PPSupplyMono-Light.ttf');
+    }
     body {
         margin: 0 auto;
-        font-family: 'VT323', monospace;
+        font-family: SupplyMono, monospace;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         background-color: ${black};
         color: white;
     }
     h1 {
+        font-family: EvangelionItalic;
+        font-weight: 100;
         padding: 0;
         margin: 0.2em;
         font-size: 3.5em;
         color: ${blue};
     }
+    h1 a {
+        color: ${blue};
+        text-decoration: none;
+    }
     h2 {
-        text-align: center;
+        font-family: EvangelionRegular;
+        font-weight: 100;
         padding: 0;
         margin: 0.2em;
         font-size: 2.5em;
@@ -194,8 +212,10 @@ async function stylesheet(request) {
         border-radius: 5px;
     }
     table {
-        margin: 0 auto;
         font-size: 2em;
+        margin: 1em 1.5em;
+        padding: 14px;
+        border: 4px solid ${yellow};
     }
     table th {
         text-align: right;
@@ -215,7 +235,7 @@ async function stylesheet(request) {
         background-color: ${black};
         color: ${yellow};
         outline: none;
-        font-family: 'VT323', monospace;
+        font-family: 'SupplyMono', monospace;
         font-size: 2.4em;
         width: 3em;
         text-align: center;
@@ -224,10 +244,10 @@ async function stylesheet(request) {
         background-color: ${black};
         border: 1px solid ${blue};
         border-radius: 3px;
-        font-family: 'VT323', monospace;
+        font-family: 'SupplyMono', monospace;
         color: ${yellow};
         font-size: 1.8em;
-        padding: 0.15em 0.3em;
+        padding: 0.25em 0.3em 0.05em 0.3em;
     }
     ol.run-list {
         margin-left: 4em;
@@ -244,7 +264,7 @@ async function home(request) {
     <!html>
     ${htmlHead('2112 Runner Hunter')}
     <body>
-        <h1>$&gt; find a runner</h1>
+        <h1>runner hunter</h1>
         <form action="/search">
             <input type="text" name="id" />
             <button>Hunt &gt;</button>
@@ -306,7 +326,7 @@ async function runner(request, env) {
         ${htmlHead(title, r)}
         <body>
             <div class="runner">
-                <h1>${title}</h1>
+                <h1><a href="/">${title}</a></h1>
                 <div class="row">
                     <div class="owner">
                         OWNER:: ${r.owner}
@@ -368,7 +388,7 @@ async function runs(request, env) {
         <!html>
         ${htmlHead(title, runner)}
         <body>
-            <h1>${title}</h1>
+            <h1><a href="/${id}">${title}</a></h1>
             <ol class="run-list" reversed>
                 ${runIds.map(runId => linkToRun(runId)).join('')}
             </ol>
@@ -399,7 +419,7 @@ async function viewRun(request, env) {
         <!html>
         ${htmlHead(title, runner, run)}
         <body>
-            <h1>${title}</h1>
+            <h1><a href="/${run.tokenId}/runs">${title}</a></h1>
             <h2>${runId}</h1>
             <table>
                 <tbody>
