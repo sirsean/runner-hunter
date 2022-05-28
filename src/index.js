@@ -2,6 +2,8 @@ import { ethers } from 'ethers';
 import gameABI from './game_abi.js';
 import cryptorunnerNFTABI from './cryptorunner_nft_abi.js';
 import RunnerNarrativeABI from './RunnerNarrative.js';
+import { marked } from 'marked';
+import sanitizeHtml from 'sanitize-html';
 
 let _polygon;
 function polygon(env) {
@@ -60,7 +62,7 @@ function htmlHead(title, runner, run) {
     } else if (runner) {
         let description = `NP: ${runner.attributes['Notoriety Points']}`;
         if (runner.narrative) {
-            description += `\n\n${runner.narrative}`;
+            description += `\n\n${sanitizeHtml(runner.narrative)}`;
         }
         metadata = `
         <meta property="og:title" content="${title}" />
@@ -298,7 +300,7 @@ async function runner(request, env) {
         const attrs = Object.assign({}, r.attributes);
         const notoriety = attrs['Notoriety Points'];
         ['Faction', 'Talent', 'Notoriety Points'].forEach(k => delete attrs[k]);
-        const narrativeElement = (r.narrative) ? `<div class="narrative">${r.narrative}</div>` : '';
+        const narrativeElement = (r.narrative) ? `<div class="narrative">${sanitizeHtml(marked.parse(r.narrative))}</div>` : '';
         return new Response(`
         <!html>
         ${htmlHead(title, r)}
