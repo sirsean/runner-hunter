@@ -77,9 +77,10 @@ async function stylesheet(request) {
         background-color: ${blue};
         color: white;
         font-size: 1.6em;
-        padding: 4px;
+        padding: 8px 6px 4px 6px;
         margin: 6px;
         text-decoration: none;
+        border-bottom: 2px solid ${yellow};
     }
     .imgWrapper {
         border: 4px solid ${yellow};
@@ -98,11 +99,15 @@ async function stylesheet(request) {
     }
     div.narrative {
         display: block;
-        padding: 0.3em;
+        padding: 0.05em 1em;
         margin: 0.2em;
         font-size: 1.5em;
         background-color: #2C2E3B;
         border-radius: 5px;
+    }
+    div.narrative a {
+        color: ${blue};
+        text-decoration: none;
     }
     table {
         font-size: 2em;
