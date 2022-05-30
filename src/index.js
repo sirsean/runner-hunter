@@ -186,6 +186,12 @@ async function runs(request, env) {
     });
 }
 
+function formatTimestamp(timestamp) {
+    if (timestamp) {
+        return (new Date(timestamp * 1000)).toISOString().replace(/\.000Z$/, ' UTC');
+    }
+}
+
 async function viewRun(request, env) {
     const url = new URL(request.url);
     const re = /^\/run\/(.+)$/;
@@ -216,6 +222,14 @@ async function viewRun(request, env) {
                     <tr>
                         <th>runtime</th>
                         <td>${parseInt((run.endTime - run.startTime)/60)}m</td>
+                    </tr>
+                    <tr>
+                        <th>started</th>
+                        <td>${formatTimestamp(run.startTime)}</td>
+                    </tr>
+                    <tr>
+                        <th>ended</th>
+                        <td>${formatTimestamp(run.endTime)}</td>
                     </tr>
                 </tbody>
             </table>
