@@ -111,7 +111,7 @@ async function runner(request, env) {
                 <h1><a href="/">${title}</a></h1>
                 <div class="row">
                     <div class="owner">
-                        OWNER:: ${r.owner}
+                        OWNER:: ${r.owner.name || r.owner.addr}
                     </div>
                 </div>
                 <div class="row">
