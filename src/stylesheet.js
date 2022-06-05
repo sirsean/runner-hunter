@@ -104,6 +104,7 @@ async function stylesheet(request) {
         font-size: 1.5em;
         background-color: #2C2E3B;
         border-radius: 5px;
+        width: 100%;
     }
     div.narrative a {
         color: ${blue};

@@ -119,7 +119,6 @@ async function runner(request, env) {
                         <div class="imgWrapper">
                             <img class="runner" src="${image}" />
                         </div>
-                        ${narrativeElement}
                     </div>
                     <div class="right">
                         ${attrRow('Notoriety Points', notoriety)}
@@ -129,6 +128,9 @@ async function runner(request, env) {
                             <a target="_blank" href="https://opensea.io/assets/0xd05f71067876a68336c836ae602981728034a84c/${id}">Opensea</a>
                         </div>
                     </div>
+                </div>
+                <div class="row">
+                    ${narrativeElement}
                 </div>
             </div>
         </body>
