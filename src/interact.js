@@ -3,7 +3,6 @@ import { gameContract, narrativeContract, runnerContract } from './contracts.js'
 
 async function lookupEns(env, addr) {
     return mainnet(env).lookupAddress(addr).then(name => {
-        console.log(addr, name);
         return { addr, name };
     });
 }

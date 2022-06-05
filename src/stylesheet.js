@@ -60,6 +60,14 @@ async function stylesheet(request) {
         flex-direction: column;
         margin: 0 8px;
     }
+    @media (max-width: 800px) {
+        .runner .row {
+            flex-direction: column;
+        }
+        .runner .left {
+            width: 100%;
+        }
+    }
     .runner .attr {
         font-size: 1.8em;
     }
