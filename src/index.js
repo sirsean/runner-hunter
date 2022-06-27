@@ -132,6 +132,9 @@ async function runner(request, env) {
                 <div class="row">
                     ${narrativeElement}
                 </div>
+                <footer>
+                    <a href="https://bio-runner.pages.dev/">set a bio for your runner at bio-runner</a>
+                </footer>
             </div>
         </body>
         `, {

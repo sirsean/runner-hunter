@@ -22,6 +22,24 @@ async function stylesheet(request) {
         -moz-osx-font-smoothing: grayscale;
         background-color: ${black};
         color: white;
+        min-height: 100vh;
+        position: relative;
+    }
+    body::after {
+        content: '';
+        display: block;
+        height: 50px;
+    }
+    footer {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: 50px;
+        text-align: center;
+    }
+    a {
+        color: ${blue};
+        text-decoration: none;
     }
     h1 {
         font-family: EvangelionItalic;
@@ -30,10 +48,6 @@ async function stylesheet(request) {
         margin: 0.2em;
         font-size: 3.5em;
         color: ${blue};
-    }
-    h1 a {
-        color: ${blue};
-        text-decoration: none;
     }
     h2 {
         font-family: EvangelionRegular;
@@ -113,10 +127,6 @@ async function stylesheet(request) {
         background-color: #2C2E3B;
         border-radius: 5px;
         width: 100%;
-    }
-    div.narrative a {
-        color: ${blue};
-        text-decoration: none;
     }
     table {
         font-size: 2em;
