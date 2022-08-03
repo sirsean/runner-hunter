@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import { marked } from 'marked';
 import sanitizeHtml from 'sanitize-html';
 import stylesheet from './stylesheet.js';
-import { fetchRunner, fetchRunnerRuns, fetchRun } from './interact.js';
+import { fetchRunner, fetchRunnerRuns, fetchRun, fetchCurrentStreak } from './interact.js';
 
 function runnerTitle(id, runner) {
     const talent = runner.attributes.Talent;
@@ -10,7 +10,7 @@ function runnerTitle(id, runner) {
     return `${id} :: T${talent} ${faction}`;
 }
 
-function htmlHead(title, runner, run) {
+function htmlHead(title, runner, run, currentStreak) {
     let metadata = '';
     if (run) {
         metadata = `
@@ -18,6 +18,16 @@ function htmlHead(title, runner, run) {
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://runner-hunter.sirsean.workers.dev" />
         <meta property="og:description" content="NP: ${run.notorietyPoints}\nDATA: ${parseInt(ethers.utils.formatUnits(run.data, 18))}" />
+        `;
+    } else if (currentStreak) {
+        let description = `Current Streak: ${currentStreak}`;
+        metadata = `
+        <meta property="og:title" content="${title}" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://runner-hunter.sirsean.workers.dev" />
+        <meta property="og:image" content="${runner.image}" />
+        <meta property="og:description" content="${description}" />
+        <meta name="twitter:card" content="summary_large_image">
         `;
     } else if (runner) {
         let description = `NP: ${runner.attributes['Notoriety Points']}`;
@@ -125,6 +135,7 @@ async function runner(request, env) {
                         ${Object.keys(attrs).map(k => attrRow(k, attrs[k])).join('')}
                         <div class="links">
                             <a href="/${id}/runs">Runs</a>
+                            <a href="/${id}/streak">Streak</a>
                             <a target="_blank" href="https://opensea.io/assets/0xd05f71067876a68336c836ae602981728034a84c/${id}">Opensea</a>
                         </div>
                     </div>
@@ -179,6 +190,40 @@ async function runs(request, env) {
             <ol class="run-list" reversed>
                 ${runIds.map(runId => linkToRun(runId)).join('')}
             </ol>
+        </body>
+        `, {
+            headers: {
+                'Content-Type': 'text/html;charset=UTF-8',
+            },
+        });
+    }).catch(e => {
+        console.error(e);
+        return notFound(request);
+    });
+}
+
+async function viewStreak(request, env) {
+    const url = new URL(request.url);
+    const re = /^\/(\d+)\/streak$/;
+    const [_, id] = re.exec(url.pathname);
+    return Promise.all([
+        fetchRunner(env, id),
+        fetchCurrentStreak(env, id),
+    ]).then(([runner, streak]) => {
+        const title = runnerTitle(id, runner);
+        return new Response(`
+        <!html>
+        ${htmlHead(title, runner, null, streak)}
+        <body>
+            <h1><a href="/${id}">${title}</a></h1>
+            <table>
+                <tbody>
+                    <tr>
+                        <th>Current Streak</th>
+                        <td>${streak}</td>
+                    </tr>
+                </tbody>
+            </table>
         </body>
         `, {
             headers: {
@@ -258,6 +303,7 @@ function handler(pathname) {
         [/^\/search$/, search],
         [/^\/run\/.+$/, viewRun],
         [/^\/\d+\/runs$/, runs],
+        [/^\/\d+\/streak$/, viewStreak],
         [/^\/\d+/, runner],
     ];
 

@@ -1,3 +1,4 @@
+import { ethers } from 'ethers';
 import { mainnet } from './providers.js';
 import { gameContract, narrativeContract, runnerContract } from './contracts.js';
 
@@ -29,4 +30,24 @@ export async function fetchRunnerRuns(env, id) {
 
 export async function fetchRun(env, id) {
     return gameContract(env).runsById(id);
+}
+
+function isWinningRun({ notorietyPoints }) {
+    return (notorietyPoints.eq(ethers.BigNumber.from(10)) || notorietyPoints.eq(ethers.BigNumber.from(13)));
+}
+
+export async function fetchCurrentStreak(env, id) {
+    return fetchRunnerRuns(env, id)
+        .then(async (runIds) => {
+            let streak = 0;
+            for (let i=0; i < runIds.length; i++) {
+                const run = await fetchRun(env, runIds[i]);
+                if (isWinningRun(run)) {
+                    streak++;
+                } else {
+                    break;
+                }
+            }
+            return streak;
+        });
 }
