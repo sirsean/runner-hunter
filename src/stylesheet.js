@@ -154,8 +154,11 @@ async function stylesheet(request) {
         outline: none;
         font-family: 'SupplyMono', monospace;
         font-size: 2.4em;
-        width: 3em;
+        width: 6em;
         text-align: center;
+    }
+    input::placeholder {
+        font-size: 0.5em;
     }
     button {
         background-color: ${black};

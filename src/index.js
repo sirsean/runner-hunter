@@ -82,7 +82,7 @@ async function home(request) {
     <body>
         <h1>runner hunter</h1>
         <form action="/search">
-            <input type="text" name="id" autofocus />
+            <input type="text" name="id" placeholder="Cryptorunner ID" autofocus />
             <button>Hunt &gt;</button>
         </form>
     </body>
