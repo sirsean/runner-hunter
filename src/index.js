@@ -4,10 +4,15 @@ import sanitizeHtml from 'sanitize-html';
 import stylesheet from './stylesheet.js';
 import { fetchRunner, fetchRunnerRuns, fetchRun, fetchCurrentStreak } from './interact.js';
 
-function runnerTitle(id, runner) {
-    const talent = runner.attributes.Talent;
-    const faction = runner.attributes.Faction.replace(/The /, '').replace(/s$/, '');
-    return `${id} :: T${talent} ${faction}`;
+function runnerTitle(runner) {
+    const talent = runner.talent;
+    const name = runner.name;
+    const faction = runner.faction;
+    if (name === `Cryptorunner #${runner.id}`) {
+        return `${runner.id} :: T${talent} ${faction}`;
+    } else {
+        return `${runner.id} :: ${name} :: T${talent} ${faction}`;
+    }
 }
 
 function htmlHead(title, runner, run, currentStreak) {
@@ -30,7 +35,7 @@ function htmlHead(title, runner, run, currentStreak) {
         <meta name="twitter:card" content="summary_large_image">
         `;
     } else if (runner) {
-        let description = `NP: ${runner.attributes['Notoriety Points']}`;
+        let description = `NP: ${runner.notorietyPoints}`;
         if (runner.narrative) {
             description += `\n\n${sanitizeHtml(runner.narrative)}`;
         }
@@ -107,11 +112,8 @@ async function runner(request, env) {
     const re = /^\/(\d+)$/;
     const [_, id] = re.exec(url.pathname);
     return fetchRunner(env, id).then(r => {
-        const title = runnerTitle(id, r);
+        const title = runnerTitle(r);
         const image = r.image;
-        const attrs = Object.assign({}, r.attributes);
-        const notoriety = attrs['Notoriety Points'];
-        ['Faction', 'Talent', 'Notoriety Points'].forEach(k => delete attrs[k]);
         const narrativeElement = (r.narrative) ? `<div class="narrative">${sanitizeHtml(marked.parse(r.narrative))}</div>` : '';
         return new Response(`
         <!html>
@@ -131,8 +133,8 @@ async function runner(request, env) {
                         </div>
                     </div>
                     <div class="right">
-                        ${attrRow('Notoriety Points', notoriety)}
-                        ${Object.keys(attrs).map(k => attrRow(k, attrs[k])).join('')}
+                        ${attrRow('Notoriety Points', r.notorietyPoints)}
+                        ${r.attributes.map(({ trait_type, value }) => attrRow(trait_type, value)).join('')}
                         <div class="links">
                             <a href="/${id}/runs">Runs</a>
                             <a href="/${id}/streak">Streak</a>
@@ -181,7 +183,7 @@ async function runs(request, env) {
         fetchRunner(env, id),
         fetchRunnerRuns(env, id),
     ]).then(([runner, runIds]) => {
-        const title = runnerTitle(id, runner);
+        const title = runnerTitle(runner);
         return new Response(`
         <!html>
         ${htmlHead(title, runner)}
@@ -210,7 +212,7 @@ async function viewStreak(request, env) {
         fetchRunner(env, id),
         fetchCurrentStreak(env, id),
     ]).then(([runner, streak]) => {
-        const title = runnerTitle(id, runner);
+        const title = runnerTitle(runner);
         return new Response(`
         <!html>
         ${htmlHead(title, runner, null, streak)}
@@ -252,7 +254,7 @@ async function viewRun(request, env) {
             fetchRunner(env, run.tokenId),
         ]);
     }).then(([run, runner]) => {
-        const title = runnerTitle(run.tokenId, runner);
+        const title = runnerTitle(runner);
         return new Response(`
         <!html>
         ${htmlHead(title, runner, run)}
