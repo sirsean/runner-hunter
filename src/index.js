@@ -4,6 +4,10 @@ import sanitizeHtml from 'sanitize-html';
 import stylesheet from './stylesheet.js';
 import { fetchRunner, fetchRunnerRuns, fetchRun, fetchCurrentStreak } from './interact.js';
 
+function metadataEscape(input) {
+    return input.replaceAll(/\"/g, "\\\"");
+}
+
 function runnerTitle(runner) {
     const talent = runner.talent;
     const name = runner.name;
@@ -37,7 +41,7 @@ function htmlHead(title, runner, run, currentStreak) {
     } else if (runner) {
         let description = `NP: ${runner.notorietyPoints}`;
         if (runner.narrative) {
-            description += `\n\n${sanitizeHtml(runner.narrative)}`;
+            description += `\n\n${metadataEscape(sanitizeHtml(runner.narrative))}`;
         }
         metadata = `
         <meta property="og:title" content="${title}" />
